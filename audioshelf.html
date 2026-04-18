@@ -243,14 +243,6 @@ body::after{content:'';position:fixed;top:0;left:0;right:0;height:300px;backgrou
               <input type="text" id="inputTitle" placeholder="請輸入書名" />
             </div>
             <div class="form-group">
-              <label>分類</label>
-              <input type="text" id="inputCategory" placeholder="例：商業、心理、小說…" />
-            </div>
-            <div class="form-group">
-              <label>封面圖示</label>
-              <div class="emoji-picker" id="emojiPicker"></div>
-            </div>
-            <div class="form-group">
               <label>書本內文</label>
               <textarea id="inputText" rows="10" placeholder="貼上書本全文。&#10;&#10;分章節方式：&#10;第一章 標題&#10;Chapter 1 標題&#10;===&#10;&#10;或直接貼入，系統自動分段。"></textarea>
               <div class="char-count" id="charCount">0 字</div>
@@ -262,6 +254,14 @@ body::after{content:'';position:fixed;top:0;left:0;right:0;height:300px;backgrou
           </div>
         </div>
         <div>
+          <div class="form-card" style="margin-bottom:1rem;">
+            <h2>📤 分享書本</h2>
+            <p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:1rem;line-height:1.6;">把書本匯出成檔案，傳給朋友；朋友用匯入功能就能加到他的書架。</p>
+            <div style="display:flex;gap:0.75rem;flex-wrap:wrap">
+              <button class="btn btn-ghost" onclick="document.getElementById('importBookInput').click()" style="flex:1">⬆ 匯入書本</button>
+              <input type="file" id="importBookInput" accept=".json" style="display:none" onchange="importBook(event)" />
+            </div>
+          </div>
           <div class="form-card">
             <h2>📚 已新增的書本</h2>
             <div class="my-books-list" id="myBooksList">
@@ -547,10 +547,78 @@ function renderMyBooksList() {
   list.innerHTML='';
   books.forEach(book=>{
     const div=document.createElement('div'); div.className='my-book-item'; div.onclick=()=>openReader(book.id);
-    div.innerHTML=`<div class="my-book-emoji">${book.emoji||'📚'}</div><div class="my-book-info"><div class="my-book-title">${book.title}</div><div class="my-book-meta">${book.category||'未分類'} · ${(book.chapters||[]).length} 章節</div></div><div class="my-book-actions"><button class="book-action-btn" onclick="event.stopPropagation();editBook('${book.id}')">✏️</button><button class="book-action-btn del" onclick="deleteBook('${book.id}',event)">🗑</button></div>`;
+    div.innerHTML=`<div class="my-book-emoji">${book.emoji||'📚'}</div><div class="my-book-info"><div class="my-book-title">${book.title}</div><div class="my-book-meta">${(book.chapters||[]).length} 章節</div></div><div class="my-book-actions"><button class="book-action-btn" onclick="event.stopPropagation();exportBook('${book.id}')" title="匯出分享">📤</button><button class="book-action-btn" onclick="event.stopPropagation();editBook('${book.id}')">✏️</button><button class="book-action-btn del" onclick="deleteBook('${book.id}',event)">🗑</button></div>`;
     list.appendChild(div);
   });
 }
+
+// 匯出單本書
+window.exportBook = (id) => {
+  const book = books.find(b=>b.id===id);
+  if (!book) return;
+  const exportData = {
+    version: '1.0',
+    exportedAt: new Date().toISOString(),
+    exportedBy: currentUser?.displayName || '',
+    book: {
+      title: book.title,
+      emoji: book.emoji || '📚',
+      rawText: book.rawText,
+      chapters: book.chapters,
+      addedAt: book.addedAt
+    }
+  };
+  const blob = new Blob([JSON.stringify(exportData, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `audioshelf-${book.title.replace(/\s+/g,'-')}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast(`📤 《${book.title}》已匯出，可以分享給朋友！`, true);
+};
+
+// 匯入書本
+window.importBook = (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      // 支援單本書格式
+      const bookData = data.book || data;
+      if (!bookData.title || !bookData.rawText) {
+        showToast('❌ 檔案格式錯誤', false); return;
+      }
+      // 檢查是否已有同名書
+      const exists = books.find(b => b.title === bookData.title);
+      if (exists) {
+        if (!confirm(`書架已有《${bookData.title}》，確定要新增重複的書嗎？`)) {
+          event.target.value=''; return;
+        }
+      }
+      const newBook = {
+        id: Date.now().toString(),
+        title: bookData.title,
+        emoji: bookData.emoji || '📚',
+        rawText: bookData.rawText,
+        chapters: bookData.chapters || parseChapters(bookData.rawText),
+        progress: { chapterIdx: 0, charOffset: 0 },
+        note: '',
+        addedAt: Date.now()
+      };
+      books.unshift(newBook);
+      await saveBookToFirestore(newBook);
+      renderShelf(); renderMyBooksList();
+      showToast(`✅ 《${newBook.title}》已加入你的書架！`, true);
+    } catch(err) {
+      showToast('❌ 檔案格式錯誤', false);
+    }
+    event.target.value='';
+  };
+  reader.readAsText(file);
+};
 
 // READER
 window.openReader = (bookId) => {
