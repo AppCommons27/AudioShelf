@@ -435,17 +435,9 @@ window.switchTab = (tab) => {
   if (tab==='add') renderMyBooksList();
 };
 
-// EMOJI
-function renderEmojiPicker() {
-  const p=document.getElementById('emojiPicker'); p.innerHTML='';
-  EMOJIS.forEach(e=>{
-    const b=document.createElement('button'); b.className='emoji-btn'; b.type='button'; b.textContent=e;
-    b.onclick=()=>{document.querySelectorAll('.emoji-btn').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');};
-    p.appendChild(b);
-  });
-  p.querySelector('.emoji-btn')?.classList.add('selected');
-}
-function getSelectedEmoji(){return document.querySelector('.emoji-btn.selected')?.textContent||'📚';}
+// EMOJI - 保留但不顯示，預設用📚
+function renderEmojiPicker() {}
+function getSelectedEmoji(){return '📚';}
 
 document.getElementById('inputText').addEventListener('input',function(){
   document.getElementById('charCount').textContent=this.value.length.toLocaleString()+' 字';
@@ -468,19 +460,17 @@ function parseChapters(text) {
 // CRUD
 window.saveBook = async () => {
   const title=document.getElementById('inputTitle').value.trim();
-  const category=document.getElementById('inputCategory').value.trim();
   const rawText=document.getElementById('inputText').value.trim();
-  const emoji=getSelectedEmoji();
   const editId=document.getElementById('editingBookId').value;
   if(!title){showToast('請輸入書名',false);return;}
   if(!rawText){showToast('請輸入書本內文',false);return;}
   const chapters=parseChapters(rawText);
   if(editId){
     const idx=books.findIndex(b=>b.id===editId);
-    if(idx>=0){books[idx]={...books[idx],title,category,emoji,rawText,chapters};await saveBookToFirestore(books[idx]);}
+    if(idx>=0){books[idx]={...books[idx],title,rawText,chapters};await saveBookToFirestore(books[idx]);}
     showToast('書本已更新 ✓',true);
   } else {
-    const book={id:Date.now().toString(),title,category,emoji,rawText,chapters,progress:{chapterIdx:0,charOffset:0},note:'',addedAt:Date.now()};
+    const book={id:Date.now().toString(),title,emoji:'📚',rawText,chapters,progress:{chapterIdx:0,charOffset:0},note:'',addedAt:Date.now()};
     books.unshift(book); await saveBookToFirestore(book);
     showToast(`《${title}》已加入書架 ✓`,true);
   }
@@ -492,24 +482,20 @@ window.editBook = (id) => {
   switchTab('add');
   document.getElementById('editingBookId').value=id;
   document.getElementById('inputTitle').value=book.title;
-  document.getElementById('inputCategory').value=book.category||'';
   document.getElementById('inputText').value=book.rawText||'';
   document.getElementById('charCount').textContent=(book.rawText||'').length.toLocaleString()+' 字';
   document.getElementById('formTitle').textContent='✏️ 編輯書本';
   document.getElementById('cancelEditBtn').style.display='inline-flex';
-  setTimeout(()=>{document.querySelectorAll('.emoji-btn').forEach(b=>b.classList.toggle('selected',b.textContent===book.emoji));},50);
   window.scrollTo({top:0,behavior:'smooth'});
 };
 
 window.clearForm = () => {
   document.getElementById('editingBookId').value='';
   document.getElementById('inputTitle').value='';
-  document.getElementById('inputCategory').value='';
   document.getElementById('inputText').value='';
   document.getElementById('charCount').textContent='0 字';
   document.getElementById('formTitle').textContent='📝 新增書本';
   document.getElementById('cancelEditBtn').style.display='none';
-  renderEmojiPicker();
 };
 
 window.deleteBook = async (id,e) => {
