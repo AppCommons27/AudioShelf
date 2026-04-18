@@ -258,7 +258,15 @@ body::after{content:'';position:fixed;top:0;left:0;right:0;height:300px;backgrou
             <h2>📤 分享書本</h2>
             <p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:1rem;line-height:1.6;">把書本匯出成檔案，傳給朋友；朋友用匯入功能就能加到他的書架。</p>
             <div style="display:flex;gap:0.75rem;flex-wrap:wrap">
-              <button class="btn btn-ghost" onclick="document.getElementById('importBookInput').click()" style="flex:1">⬆ 匯入書本</button>
+              <button class="btn btn-gold" onclick="exportAllBooks()" style="flex:1">📤 匯出全部</button>
+              <button class="btn btn-ghost" onclick="toggleSelectExport()" style="flex:1" id="selectExportBtn">☑ 選擇匯出</button>
+            </div>
+            <div id="selectExportPanel" style="display:none;margin-top:1rem;">
+              <div id="selectBookList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:0.75rem;"></div>
+              <button class="btn btn-gold" onclick="exportSelectedBooks()" style="width:100%">📤 匯出已選擇的書</button>
+            </div>
+            <div style="margin-top:0.75rem;border-top:1px solid var(--border);padding-top:0.75rem;">
+              <button class="btn btn-ghost" onclick="document.getElementById('importBookInput').click()" style="width:100%">⬆ 匯入書本</button>
               <input type="file" id="importBookInput" accept=".json" style="display:none" onchange="importBook(event)" />
             </div>
           </div>
@@ -538,6 +546,85 @@ function renderMyBooksList() {
   });
 }
 
+// 匯出全部書本
+window.exportAllBooks = () => {
+  if (!books.length) { showToast('書架是空的', false); return; }
+  const exportData = {
+    version: '1.0',
+    exportedAt: new Date().toISOString(),
+    exportedBy: currentUser?.displayName || '',
+    bookCount: books.length,
+    books: books.map(b => ({
+      title: b.title, emoji: b.emoji||'📚',
+      rawText: b.rawText, chapters: b.chapters, addedAt: b.addedAt
+    }))
+  };
+  const blob = new Blob([JSON.stringify(exportData, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `audioshelf-全部書本-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast(`📤 已匯出 ${books.length} 本書！`, true);
+};
+
+// 選擇匯出面板
+window.toggleSelectExport = () => {
+  const panel = document.getElementById('selectExportPanel');
+  const btn = document.getElementById('selectExportBtn');
+  const isOpen = panel.style.display !== 'none';
+  if (isOpen) {
+    panel.style.display = 'none';
+    btn.textContent = '☑ 選擇匯出';
+  } else {
+    panel.style.display = 'block';
+    btn.textContent = '✕ 取消選擇';
+    renderSelectBookList();
+  }
+};
+
+function renderSelectBookList() {
+  const list = document.getElementById('selectBookList');
+  list.innerHTML = '';
+  if (!books.length) {
+    list.innerHTML = `<div style="font-size:0.82rem;color:var(--text-dim);text-align:center;padding:1rem">還沒有書本</div>`;
+    return;
+  }
+  books.forEach(book => {
+    const div = document.createElement('label');
+    div.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:0.85rem;color:var(--text);';
+    div.innerHTML = `<input type="checkbox" data-id="${book.id}" style="accent-color:var(--gold);width:16px;height:16px;" checked /><span>${book.emoji||'📚'}</span><span>${book.title}</span>`;
+    list.appendChild(div);
+  });
+}
+
+window.exportSelectedBooks = () => {
+  const checked = [...document.querySelectorAll('#selectBookList input[type=checkbox]:checked')];
+  if (!checked.length) { showToast('請至少選擇一本書', false); return; }
+  const selectedIds = checked.map(c => c.dataset.id);
+  const selected = books.filter(b => selectedIds.includes(b.id));
+  const exportData = {
+    version: '1.0',
+    exportedAt: new Date().toISOString(),
+    exportedBy: currentUser?.displayName || '',
+    bookCount: selected.length,
+    books: selected.map(b => ({
+      title: b.title, emoji: b.emoji||'📚',
+      rawText: b.rawText, chapters: b.chapters, addedAt: b.addedAt
+    }))
+  };
+  const blob = new Blob([JSON.stringify(exportData, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `audioshelf-${selected.length}本書-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast(`📤 已匯出 ${selected.length} 本書！`, true);
+  toggleSelectExport();
+};
+
 // 匯出單本書
 window.exportBook = (id) => {
   const book = books.find(b=>b.id===id);
@@ -564,7 +651,7 @@ window.exportBook = (id) => {
   showToast(`📤 《${book.title}》已匯出，可以分享給朋友！`, true);
 };
 
-// 匯入書本
+// 匯入書本（支援單本或多本）
 window.importBook = (event) => {
   const file = event.target.files[0];
   if (!file) return;
@@ -572,32 +659,37 @@ window.importBook = (event) => {
   reader.onload = async (e) => {
     try {
       const data = JSON.parse(e.target.result);
-      // 支援單本書格式
-      const bookData = data.book || data;
-      if (!bookData.title || !bookData.rawText) {
+      // 判斷是單本還是多本
+      const importedBooks = data.books
+        ? data.books  // 多本格式
+        : (data.book ? [data.book] : [data]); // 單本格式
+      if (!importedBooks.length || !importedBooks[0].title) {
         showToast('❌ 檔案格式錯誤', false); return;
       }
-      // 檢查是否已有同名書
-      const exists = books.find(b => b.title === bookData.title);
-      if (exists) {
-        if (!confirm(`書架已有《${bookData.title}》，確定要新增重複的書嗎？`)) {
-          event.target.value=''; return;
-        }
+      let addedCount = 0;
+      for (const bookData of importedBooks) {
+        const exists = books.find(b => b.title === bookData.title);
+        if (exists) continue; // 跳過重複的
+        const newBook = {
+          id: Date.now().toString() + Math.random().toString(36).slice(2),
+          title: bookData.title,
+          emoji: bookData.emoji || '📚',
+          rawText: bookData.rawText,
+          chapters: bookData.chapters || parseChapters(bookData.rawText||''),
+          progress: { chapterIdx: 0, charOffset: 0 },
+          note: '', addedAt: Date.now()
+        };
+        books.unshift(newBook);
+        await saveBookToFirestore(newBook);
+        addedCount++;
       }
-      const newBook = {
-        id: Date.now().toString(),
-        title: bookData.title,
-        emoji: bookData.emoji || '📚',
-        rawText: bookData.rawText,
-        chapters: bookData.chapters || parseChapters(bookData.rawText),
-        progress: { chapterIdx: 0, charOffset: 0 },
-        note: '',
-        addedAt: Date.now()
-      };
-      books.unshift(newBook);
-      await saveBookToFirestore(newBook);
+      const skipped = importedBooks.length - addedCount;
       renderShelf(); renderMyBooksList();
-      showToast(`✅ 《${newBook.title}》已加入你的書架！`, true);
+      if (addedCount > 0) {
+        showToast(`✅ 成功匯入 ${addedCount} 本書${skipped>0?`（${skipped} 本重複略過）`:''}`, true);
+      } else {
+        showToast('所有書本已在書架中，無需重複匯入', false);
+      }
     } catch(err) {
       showToast('❌ 檔案格式錯誤', false);
     }
