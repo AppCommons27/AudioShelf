@@ -178,6 +178,11 @@ input::placeholder,textarea::placeholder{color:var(--text-dim);}
 @keyframes spin{to{transform:rotate(360deg)}}
 .loading-text{font-size:0.82rem;color:var(--text-dim);}
 
+/* GENERATE TAB */
+#genLangZh.active,#genLangEn.active{background:var(--gold-dim);border-color:var(--gold);color:var(--gold);}
+.gen-cursor{display:inline-block;width:2px;height:1em;background:var(--gold);margin-left:2px;animation:blink 1s ease infinite;vertical-align:middle;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
 body::after{content:'';position:fixed;top:0;left:0;right:0;height:280px;background:radial-gradient(ellipse 60% 40% at 80% 0%,rgba(201,148,58,0.05) 0%,transparent 70%);pointer-events:none;z-index:0;}
 </style>
 </head>
@@ -227,6 +232,7 @@ body::after{content:'';position:fixed;top:0;left:0;right:0;height:280px;backgrou
   <div class="tab-bar">
     <button class="tab-btn active" id="tabShelfBtn" onclick="switchTab('shelf')"></button>
     <button class="tab-btn" id="tabAddBtn" onclick="switchTab('add')"></button>
+    <button class="tab-btn" id="tabGenBtn" onclick="switchTab('gen')"></button>
   </div>
 
   <main>
@@ -281,6 +287,64 @@ body::after{content:'';position:fixed;top:0;left:0;right:0;height:280px;backgrou
           <div class="form-card">
             <h2 id="myBooksTitle"></h2>
             <div class="my-books-list" id="myBooksList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GENERATE -->
+    <div class="tab-view" id="tabGen">
+      <div style="max-width:680px;margin:0 auto;">
+        <div class="form-card">
+          <h2 id="genTitle"></h2>
+          <p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:1.25rem;line-height:1.6;" id="genDesc"></p>
+          <div class="form-group">
+            <label id="genLabelBook"></label>
+            <input type="text" id="genBookName" />
+          </div>
+          <div class="form-group">
+            <label id="genLabelTime"></label>
+            <div style="display:flex;gap:0.6rem;align-items:center;">
+              <select id="genMinutes" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 13px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:0.88rem;outline:none;flex:1;">
+                <option value="5">5 min</option>
+                <option value="10" selected>10 min</option>
+                <option value="15">15 min</option>
+                <option value="20">20 min</option>
+                <option value="30">30 min</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label id="genLabelLang"></label>
+            <div style="display:flex;gap:0.5rem;">
+              <button class="btn btn-ghost" id="genLangZh" onclick="setGenLang('zh')" style="flex:1">繁體中文</button>
+              <button class="btn btn-ghost" id="genLangEn" onclick="setGenLang('en')" style="flex:1">English</button>
+            </div>
+          </div>
+          <button class="btn btn-gold" onclick="generateSummary()" style="width:100%;margin-top:0.25rem;" id="btnGenerate"></button>
+        </div>
+
+        <!-- RESULT -->
+        <div id="genResultCard" style="display:none;margin-top:1.25rem;">
+          <div class="form-card">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:0.5rem;">
+              <h2 id="genResultTitle" style="font-family:'Playfair Display',serif;font-size:1.2rem;"></h2>
+              <div style="font-size:0.72rem;color:var(--text-dim);" id="genResultMeta"></div>
+            </div>
+            <!-- Streaming output -->
+            <div id="genStreamBox" style="font-family:'Noto Serif TC',serif;font-size:0.9rem;line-height:1.9;color:var(--text-mid);white-space:pre-wrap;word-break:break-word;max-height:400px;overflow-y:auto;padding:1rem;background:var(--bg);border:1px solid var(--border);border-radius:8px;margin-bottom:1.25rem;"></div>
+            <!-- Generating indicator -->
+            <div id="genLoadingBar" style="display:none;margin-bottom:1rem;">
+              <div style="display:flex;align-items:center;gap:10px;font-size:0.82rem;color:var(--gold);">
+                <div class="loading-spinner" style="width:18px;height:18px;border-width:2px;"></div>
+                <span id="genLoadingText"></span>
+              </div>
+            </div>
+            <div style="display:flex;gap:0.6rem;flex-wrap:wrap;" id="genActionBtns">
+              <button class="btn btn-gold" onclick="saveGeneratedBook()" style="flex:1" id="btnSaveGen"></button>
+              <button class="btn btn-ghost" onclick="regenerate()" style="flex:1" id="btnRegen"></button>
+              <button class="btn btn-ghost" onclick="discardGen()" id="btnDiscard"></button>
+            </div>
           </div>
         </div>
       </div>
@@ -426,6 +490,13 @@ const T = {
     noTitle:'請輸入書名', noContent:'請輸入書本內文',
     sleepStop:'🌙 睡眠定時到，已停止', sleepSet:'🌙 {n} 分鐘後自動停止',
     sleepTimer:'睡眠定時：', voiceLoading:'載入語音…',
+    tabGen:'✨ 生成書摘',
+    genTitle:'✨ AI 生成書摘', genDesc:'輸入書名和想要的朗讀時間，AI 會自動生成一份精華摘要，可以直接加入書架聆聽。',
+    genLabelBook:'書名', genBookPlaceholder:'例：原子習慣、思考，快與慢…',
+    genLabelTime:'朗讀時間', genLabelLang:'摘要語言',
+    btnGenerate:'✨ 生成摘要', btnSaveGen:'💾 儲存到書架', btnRegen:'🔄 重新生成', btnDiscard:'✕ 丟棄',
+    generating:'AI 正在生成摘要…', genSaved:'已儲存到書架 ✓',
+    genNoTitle:'請輸入書名', genResultMeta:'{min} 分鐘摘要 · {chars} 字',
   },
   en: {
     loading:'Loading…', tagline:'Your personal cloud audiobook space.\nSign in with Google to keep your shelf everywhere.',
@@ -455,6 +526,13 @@ const T = {
     noTitle:'Please enter a title', noContent:'Please enter content',
     sleepStop:'🌙 Sleep timer ended', sleepSet:'🌙 Stops in {n} min',
     sleepTimer:'Sleep: ', voiceLoading:'Loading voices…',
+    tabGen:'✨ Generate',
+    genTitle:'✨ AI Book Summary', genDesc:'Enter a book title and your desired listening time. AI will generate a summary you can save and listen to.',
+    genLabelBook:'Book Title', genBookPlaceholder:'e.g. Atomic Habits, Thinking Fast and Slow…',
+    genLabelTime:'Listening Time', genLabelLang:'Summary Language',
+    btnGenerate:'✨ Generate Summary', btnSaveGen:'💾 Save to Shelf', btnRegen:'🔄 Regenerate', btnDiscard:'✕ Discard',
+    generating:'AI is generating summary…', genSaved:'Saved to shelf ✓',
+    genNoTitle:'Please enter a book title', genResultMeta:'{min} min summary · {chars} chars',
   }
 };
 
@@ -477,6 +555,18 @@ function applyI18n() {
   // Tabs
   document.getElementById('tabShelfBtn').textContent = t('tabShelf');
   document.getElementById('tabAddBtn').textContent = t('tabManage');
+  document.getElementById('tabGenBtn').textContent = t('tabGen');
+  // Generate tab
+  document.getElementById('genTitle').textContent = t('genTitle');
+  document.getElementById('genDesc').textContent = t('genDesc');
+  document.getElementById('genLabelBook').textContent = t('genLabelBook');
+  document.getElementById('genBookName').placeholder = t('genBookPlaceholder');
+  document.getElementById('genLabelTime').textContent = t('genLabelTime');
+  document.getElementById('genLabelLang').textContent = t('genLabelLang');
+  document.getElementById('btnGenerate').textContent = t('btnGenerate');
+  document.getElementById('btnSaveGen').textContent = t('btnSaveGen');
+  document.getElementById('btnRegen').textContent = t('btnRegen');
+  document.getElementById('btnDiscard').textContent = t('btnDiscard');
   // Shelf
   document.getElementById('shelfTitle').innerHTML = `${t('shelfTitle')}<span>${t('shelfTitleSpan')}</span>`;
   // Form
@@ -568,8 +658,10 @@ window.switchTab = (tab) => {
   activeTab=tab;
   document.querySelectorAll('.tab-view').forEach(v=>v.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-  document.getElementById(tab==='shelf'?'tabShelf':'tabAdd').classList.add('active');
-  document.getElementById(tab==='shelf'?'tabShelfBtn':'tabAddBtn').classList.add('active');
+  const tabMap={shelf:'tabShelf',add:'tabAdd',gen:'tabGen'};
+  const btnMap={shelf:'tabShelfBtn',add:'tabAddBtn',gen:'tabGenBtn'};
+  document.getElementById(tabMap[tab])?.classList.add('active');
+  document.getElementById(btnMap[tab])?.classList.add('active');
   if(tab==='add') renderMyBooksList();
 };
 
@@ -942,6 +1034,142 @@ function loadVoices(){
 }
 window.setVoice=()=>{const i=parseInt(document.getElementById('voiceSelect').value);if(!isNaN(i))selectedVoice=voices[i];};
 window.addEventListener('load',()=>{loadVoices();window.speechSynthesis.onvoiceschanged=loadVoices;});
+
+// ── GENERATE TAB ──
+let genLang = 'zh';
+let genResultText = '';
+let genBookTitle = '';
+
+window.setGenLang = (l) => {
+  genLang = l;
+  document.getElementById('genLangZh').classList.toggle('active', l==='zh');
+  document.getElementById('genLangEn').classList.toggle('active', l==='en');
+};
+// Default active
+setTimeout(()=>{ document.getElementById('genLangZh').classList.add('active'); }, 100);
+
+window.generateSummary = async () => {
+  const bookName = document.getElementById('genBookName').value.trim();
+  const minutes = parseInt(document.getElementById('genMinutes').value);
+  if (!bookName) { showToast(t('genNoTitle'), false); return; }
+
+  genBookTitle = bookName;
+  genResultText = '';
+
+  // Show result card
+  document.getElementById('genResultCard').style.display = 'block';
+  document.getElementById('genResultTitle').textContent = bookName;
+  document.getElementById('genResultMeta').textContent = '';
+  document.getElementById('genStreamBox').innerHTML = '<span class="gen-cursor"></span>';
+  document.getElementById('genLoadingBar').style.display = 'block';
+  document.getElementById('genLoadingText').textContent = t('generating');
+  document.getElementById('genActionBtns').style.display = 'none';
+  document.getElementById('btnGenerate').disabled = true;
+  document.getElementById('btnGenerate').style.opacity = '0.6';
+
+  // Scroll to result
+  document.getElementById('genResultCard').scrollIntoView({behavior:'smooth', block:'start'});
+
+  const langInstr = genLang === 'zh'
+    ? '請用繁體中文寫作，適合台灣讀者。'
+    : 'Please write in English.';
+
+  const wordCount = minutes * 200; // ~200 chars/min for TTS
+  const prompt = `請為《${bookName}》這本書寫一份 ${minutes} 分鐘的精華摘要（約 ${wordCount} 字）。${langInstr}
+
+要求：
+- 分成清楚的章節，每章節用「第X章 標題」的格式開頭
+- 涵蓋書中最核心的概念、理論和實用建議
+- 語言自然流暢，適合 TTS 朗讀
+- 不要使用 markdown 格式（不用 ** 或 # 等符號）
+- 直接開始寫內容，不需要前言說明這是摘要
+
+請直接輸出摘要內容。`;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 4000,
+        stream: true,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    const box = document.getElementById('genStreamBox');
+    box.innerHTML = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const chunk = decoder.decode(value);
+      const lines = chunk.split('\n');
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = line.slice(6).trim();
+        if (data === '[DONE]') continue;
+        try {
+          const json = JSON.parse(data);
+          const delta = json.delta?.text || '';
+          if (delta) {
+            genResultText += delta;
+            box.textContent = genResultText;
+            box.scrollTop = box.scrollHeight;
+          }
+        } catch(e) {}
+      }
+    }
+
+    // Done
+    document.getElementById('genLoadingBar').style.display = 'none';
+    document.getElementById('genResultMeta').textContent = t('genResultMeta', {min: minutes, chars: genResultText.length.toLocaleString()});
+    document.getElementById('genActionBtns').style.display = 'flex';
+    document.getElementById('btnGenerate').disabled = false;
+    document.getElementById('btnGenerate').style.opacity = '1';
+
+  } catch(err) {
+    document.getElementById('genLoadingBar').style.display = 'none';
+    document.getElementById('genStreamBox').textContent = '❌ 生成失敗，請重試。';
+    document.getElementById('btnGenerate').disabled = false;
+    document.getElementById('btnGenerate').style.opacity = '1';
+    console.error(err);
+  }
+};
+
+window.regenerate = () => {
+  document.getElementById('genResultCard').style.display = 'none';
+  generateSummary();
+};
+
+window.discardGen = () => {
+  document.getElementById('genResultCard').style.display = 'none';
+  genResultText = '';
+};
+
+window.saveGeneratedBook = async () => {
+  if (!genResultText) return;
+  const chapters = parseChapters(genResultText);
+  const book = {
+    id: Date.now().toString(),
+    title: genBookTitle,
+    emoji: '✨',
+    rawText: genResultText,
+    chapters,
+    progress: { chapterIdx: 0, charOffset: 0 },
+    note: '',
+    addedAt: Date.now()
+  };
+  books.unshift(book);
+  await saveBookToFS(book);
+  renderShelf(); renderMyBooksList();
+  showToast(t('genSaved'), true);
+  // Switch to shelf and open reader
+  setTimeout(() => { switchTab('shelf'); }, 500);
+};
 
 // ── TOAST ──
 let toastTimer;
