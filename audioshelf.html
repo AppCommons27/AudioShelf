@@ -109,6 +109,26 @@ select option{background:var(--surface);}
 .btn-ghost{background:transparent;color:var(--text-dim);border:1px solid var(--border);}
 .btn-ghost:hover{border-color:var(--border2);color:var(--text);}
 
+/* STICKY PLAYER BAR - always visible at top when reading */
+.sticky-player{
+  position:sticky; top:60px; z-index:85;
+  background:rgba(24,20,16,0.97);
+  border-bottom:1px solid var(--border2);
+  backdrop-filter:blur(16px);
+  padding:10px 1.5rem;
+  display:none;
+  align-items:center;
+  gap:1rem;
+}
+.sticky-player.active{display:flex;}
+.sticky-player-info{flex:1;min-width:0;}
+.sticky-player-title{font-size:0.8rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sticky-player-chapter{font-size:0.68rem;color:var(--text-dim);margin-top:1px;}
+.sticky-ctrl{width:38px;height:38px;border-radius:50%;background:transparent;color:var(--text-dim);border:1px solid var(--border);cursor:pointer;font-size:0.9rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s;}
+.sticky-ctrl:hover{color:var(--text);border-color:var(--border2);}
+.sticky-play{background:var(--gold);color:#0e0c0a;border:none;width:42px;height:42px;font-size:1.1rem;}
+.sticky-play:hover{background:var(--gold-l);}
+
 /* READER */
 .reader-back{display:flex;align-items:center;gap:8px;background:none;border:none;cursor:pointer;color:var(--text-dim);font-size:0.85rem;font-family:'DM Sans',sans-serif;padding:0;margin-bottom:1.5rem;transition:color 0.15s;}
 .reader-back:hover{color:var(--gold);}
@@ -170,6 +190,16 @@ select option{background:var(--surface);}
 .loading-text{font-size:0.85rem;color:var(--text-dim);}
 
 body::after{content:'';position:fixed;top:0;left:0;right:0;height:300px;background:radial-gradient(ellipse 60% 40% at 80% 0%,rgba(201,148,58,0.05) 0%,transparent 70%);pointer-events:none;z-index:0;}
+/* FLOATING MINI PLAYER */
+.mini-player{position:fixed;bottom:0;left:0;right:0;z-index:200;background:rgba(24,20,16,0.97);border-top:1px solid var(--border2);backdrop-filter:blur(16px);padding:12px 1.5rem;display:none;align-items:center;gap:1rem;}
+.mini-player.active{display:flex;}
+.mini-player-info{flex:1;min-width:0;}
+.mini-player-title{font-size:0.82rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.mini-player-chapter{font-size:0.7rem;color:var(--text-dim);margin-top:2px;}
+.mini-play-btn{width:44px;height:44px;border-radius:50%;background:var(--gold);color:#0e0c0a;border:none;cursor:pointer;font-size:1.2rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s;}
+.mini-play-btn:hover{background:var(--gold-l);}
+.mini-stop-btn{width:36px;height:36px;border-radius:50%;background:transparent;color:var(--text-dim);border:1px solid var(--border);cursor:pointer;font-size:0.85rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s;}
+.mini-stop-btn:hover{color:var(--text);border-color:var(--border2);}
 </style>
 </head>
 <body>
@@ -218,6 +248,18 @@ body::after{content:'';position:fixed;top:0;left:0;right:0;height:300px;backgrou
   <div class="tab-bar">
     <button class="tab-btn active" id="tabShelfBtn" onclick="switchTab('shelf')">📚 我的書架</button>
     <button class="tab-btn" id="tabAddBtn" onclick="switchTab('add')">✏️ 管理書本</button>
+  </div>
+
+  <!-- STICKY PLAYER - visible when reading -->
+  <div class="sticky-player" id="stickyPlayer">
+    <div class="sticky-player-info">
+      <div class="sticky-player-title" id="stickyTitle">—</div>
+      <div class="sticky-player-chapter" id="stickyChapter">—</div>
+    </div>
+    <button class="sticky-ctrl" onclick="rewind()">↺</button>
+    <button class="sticky-ctrl sticky-play" id="stickyPlayBtn" onclick="togglePlay()">▶</button>
+    <button class="sticky-ctrl" onclick="forward()">↻</button>
+    <button class="sticky-ctrl" onclick="closeReader()" title="關閉">✕</button>
   </div>
 
   <main>
@@ -360,6 +402,17 @@ body::after{content:'';position:fixed;top:0;left:0;right:0;height:300px;backgrou
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- FLOATING MINI PLAYER -->
+<div class="mini-player" id="miniPlayer">
+  <div class="mini-player-info">
+    <div class="mini-player-title" id="miniTitle">—</div>
+    <div class="mini-player-chapter" id="miniChapter">—</div>
+  </div>
+  <button class="mini-stop-btn" onclick="rewind()" title="倒退15秒">↺</button>
+  <button class="mini-play-btn" id="miniPlayBtn" onclick="togglePlay()">▶</button>
+  <button class="mini-stop-btn" onclick="forward()" title="快進15秒">↻</button>
+</div></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
@@ -770,23 +823,51 @@ function speakFrom(text,startChar=0){
   if(selectedVoice)utterance.voice=selectedVoice;
   utterance.rate=parseFloat(document.getElementById('speedSelect').value||1);
   utterance.lang=selectedVoice?.lang||'zh-TW';
-  utterance.onstart=()=>{isPlaying=true;document.getElementById('playBtn').textContent='⏸';startSeekSim();};
+  utterance.onstart=()=>{
+    isPlaying=true;
+    document.getElementById('playBtn').textContent='⏸';
+    document.getElementById('miniPlayBtn').textContent='⏸';
+    document.getElementById('stickyPlayBtn').textContent='⏸';
+    startSeekSim();
+    updateMiniPlayer();
+  };
   utterance.onboundary=(e)=>{
     const ci=startChar+(e.charIndex||0);const pct=text.length>0?ci/text.length:0;
     chapterElapsed=Math.round(pct*chapterDuration);updateSeekUI();
     highlightWord(e.charIndex,e.charLength,text,startChar);saveProgress(Math.floor(pct*text.length));
   };
   utterance.onend=()=>{
-    isPlaying=false;document.getElementById('playBtn').textContent='▶';stopSeekSim();
+    isPlaying=false;
+    document.getElementById('playBtn').textContent='▶';
+    document.getElementById('miniPlayBtn').textContent='▶';
+    document.getElementById('stickyPlayBtn').textContent='▶';
+    stopSeekSim();
     const book=books.find(b=>b.id===currentBookId);
     if(book&&currentChapterIdx<book.chapters.length-1)setTimeout(()=>{jumpToChapter(currentChapterIdx+1);startTTS();},600);
-    else showToast('🎉 全書播放完畢！',true);
+    else{showToast('🎉 全書播放完畢！',true);hideMiniPlayer();}
   };
-  utterance.onerror=(e)=>{if(e.error!=='interrupted')console.warn(e.error);isPlaying=false;document.getElementById('playBtn').textContent='▶';stopSeekSim();};
+  utterance.onerror=(e)=>{if(e.error!=='interrupted')console.warn(e.error);isPlaying=false;document.getElementById('playBtn').textContent='▶';document.getElementById('miniPlayBtn').textContent='▶';document.getElementById('stickyPlayBtn').textContent='▶';stopSeekSim();};
   window.speechSynthesis.speak(utterance);
 }
-function pauseTTS(){window.speechSynthesis.pause();isPlaying=false;document.getElementById('playBtn').textContent='▶';stopSeekSim();}
-function stopTTS(){window.speechSynthesis.cancel();isPlaying=false;const b=document.getElementById('playBtn');if(b)b.textContent='▶';stopSeekSim();}
+function pauseTTS(){window.speechSynthesis.cancel();isPlaying=false;document.getElementById('playBtn').textContent='▶';document.getElementById('miniPlayBtn').textContent='▶';document.getElementById('stickyPlayBtn').textContent='▶';stopSeekSim();}
+function stopTTS(){window.speechSynthesis.cancel();isPlaying=false;const b=document.getElementById('playBtn');if(b)b.textContent='▶';document.getElementById('miniPlayBtn').textContent='▶';document.getElementById('stickyPlayBtn').textContent='▶';stopSeekSim();hideMiniPlayer();}
+
+function updateMiniPlayer(){
+  const book=books.find(b=>b.id===currentBookId); if(!book)return;
+  const ch=book.chapters[currentChapterIdx];
+  // Mini player (bottom)
+  document.getElementById('miniTitle').textContent=book.title;
+  document.getElementById('miniChapter').textContent=ch?ch.title:'';
+  document.getElementById('miniPlayer').classList.add('active');
+  // Sticky player (top)
+  document.getElementById('stickyTitle').textContent=book.title;
+  document.getElementById('stickyChapter').textContent=ch?ch.title:'';
+  document.getElementById('stickyPlayer').classList.add('active');
+}
+function hideMiniPlayer(){
+  document.getElementById('miniPlayer').classList.remove('active');
+  document.getElementById('stickyPlayer').classList.remove('active');
+}
 function startSeekSim(){stopSeekSim();const r=parseFloat(document.getElementById('speedSelect').value||1);seekSim=setInterval(()=>{chapterElapsed=Math.min(chapterElapsed+1,chapterDuration);updateSeekUI();},1000/r);}
 function stopSeekSim(){if(seekSim){clearInterval(seekSim);seekSim=null;}}
 
