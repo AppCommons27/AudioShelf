@@ -616,10 +616,7 @@ function applyI18n() {
   document.getElementById('btnSaveGen').textContent = t('btnSaveGen');
   document.getElementById('btnRegen').textContent = t('btnRegen');
   document.getElementById('btnDiscard').textContent = t('btnDiscard');
-  // API Key
-  document.getElementById('apiKeyDesc').textContent = t('apiKeyDesc');
-  document.getElementById('apiKeyNote').textContent = t('apiKeyNote');
-  document.getElementById('apiKeyLink').textContent = t('apiKeyLink');
+  // API Key - handled by updateApiKeyUI
   document.getElementById('btnSaveKey').textContent = t('btnSaveKey');
   document.getElementById('btnClearKey').textContent = t('btnClearKey');
   updateApiKeyUI();
