@@ -41,8 +41,8 @@ header{display:flex;align-items:center;justify-content:space-between;padding:0 1
 .user-name{font-size:0.78rem;color:var(--text-mid);}
 .btn-small{background:transparent;border:1px solid var(--border);color:var(--text-dim);border-radius:8px;padding:4px 10px;font-size:0.72rem;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s;}
 .btn-small:hover{border-color:var(--border2);color:var(--text);}
-.btn-kofi{display:flex;align-items:center;gap:5px;background:#FF5E5B;color:#fff;border-radius:8px;padding:5px 10px;font-size:0.78rem;font-weight:600;text-decoration:none;transition:all 0.15s;font-family:'DM Sans',sans-serif;white-space:nowrap;}
-.btn-kofi:hover{background:#ff4542;transform:translateY(-1px);box-shadow:0 3px 10px rgba(255,94,91,0.3);}
+.btn-kofi{display:flex;align-items:center;gap:6px;background:#FF5E5B;color:#fff;border-radius:8px;padding:8px 16px;font-size:0.9rem;font-weight:700;text-decoration:none;transition:all 0.15s;font-family:'DM Sans',sans-serif;white-space:nowrap;}
+.btn-kofi:hover{background:#ff4542;transform:translateY(-1px);box-shadow:0 4px 14px rgba(255,94,91,0.35);}
 @media(max-width:500px){.btn-kofi span{display:none;}}
 .btn-lang{background:var(--gold-dim);border-color:var(--gold);color:var(--gold);}
 
@@ -226,9 +226,11 @@ body::after{content:'';position:fixed;top:0;left:0;right:0;height:280px;backgrou
 <!-- MAIN APP -->
 <div id="mainApp" style="display:none">
   <header>
-    <div class="logo"><div class="logo-icon">📖</div>AudioShelf</div>
-    <div class="header-right">
+    <div style="display:flex;align-items:center;gap:1rem;">
+      <div class="logo"><div class="logo-icon">📖</div>AudioShelf</div>
       <a href="https://ko-fi.com/appcommons" target="_blank" rel="noopener" class="btn-kofi" id="btnKofi">☕ <span id="kofiText"></span></a>
+    </div>
+    <div class="header-right">
       <button class="btn-small btn-lang" onclick="toggleLang()" id="langToggleBtn">EN</button>
       <img class="user-avatar" id="userAvatar" src="" alt="" />
       <span class="user-name" id="userName"></span>
