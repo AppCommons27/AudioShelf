@@ -309,6 +309,7 @@ body::after{content:'';position:fixed;top:0;left:0;right:0;height:280px;backgrou
           </div>
           <div style="margin-top:0.6rem;display:flex;align-items:center;justify-content:space-between;">
             <p style="font-size:0.72rem;color:var(--text-dim);" id="apiKeyNote"></p>
+            <a href="https://console.anthropic.com" target="_blank" rel="noopener" style="font-size:0.72rem;color:var(--gold);text-decoration:none;" id="apiKeyLink"></a>
             <button onclick="clearApiKey()" id="btnClearKey" style="display:none;background:none;border:none;color:var(--text-dim);font-size:0.72rem;cursor:pointer;text-decoration:underline;font-family:'DM Sans',sans-serif;"></button>
           </div>
         </div>
@@ -516,7 +517,7 @@ const T = {
     generating:'AI 正在生成摘要…', genSaved:'已儲存到書架 ✓',
     genNoTitle:'請輸入書名', genResultMeta:'{min} 分鐘摘要 · {chars} 字',
     apiKeyDesc:'輸入你的 Anthropic API Key，儲存後就可以使用 AI 生成功能。Key 只存在你的瀏覽器，不會上傳到任何伺服器。',
-    apiKeyNote:'取得 API Key → console.anthropic.com',
+    apiKeyNote:'取得 API Key → ', apiKeyLink:'console.anthropic.com',
     btnSaveKey:'儲存', btnClearKey:'清除 Key',
     apiKeySet:'✅ API Key 已設定', apiKeyNotSet:'未設定',
     apiKeySaved:'API Key 已儲存 ✓', apiKeyCleared:'API Key 已清除',
@@ -558,7 +559,7 @@ const T = {
     generating:'AI is generating summary…', genSaved:'Saved to shelf ✓',
     genNoTitle:'Please enter a book title', genResultMeta:'{min} min summary · {chars} chars',
     apiKeyDesc:'Enter your Anthropic API Key to use the AI generation feature. Your key is stored only in your browser and never sent to any server.',
-    apiKeyNote:'Get your API Key → console.anthropic.com',
+    apiKeyNote:'Get your API Key → ', apiKeyLink:'console.anthropic.com',
     btnSaveKey:'Save', btnClearKey:'Clear Key',
     apiKeySet:'✅ API Key set', apiKeyNotSet:'Not set',
     apiKeySaved:'API Key saved ✓', apiKeyCleared:'API Key cleared',
@@ -600,6 +601,7 @@ function applyI18n() {
   // API Key
   document.getElementById('apiKeyDesc').textContent = t('apiKeyDesc');
   document.getElementById('apiKeyNote').textContent = t('apiKeyNote');
+  document.getElementById('apiKeyLink').textContent = t('apiKeyLink');
   document.getElementById('btnSaveKey').textContent = t('btnSaveKey');
   document.getElementById('btnClearKey').textContent = t('btnClearKey');
   updateApiKeyUI();
