@@ -41,6 +41,9 @@ header{display:flex;align-items:center;justify-content:space-between;padding:0 1
 .user-name{font-size:0.78rem;color:var(--text-mid);}
 .btn-small{background:transparent;border:1px solid var(--border);color:var(--text-dim);border-radius:8px;padding:4px 10px;font-size:0.72rem;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s;}
 .btn-small:hover{border-color:var(--border2);color:var(--text);}
+.btn-kofi{display:flex;align-items:center;gap:5px;background:#FF5E5B;color:#fff;border-radius:8px;padding:5px 10px;font-size:0.78rem;font-weight:600;text-decoration:none;transition:all 0.15s;font-family:'DM Sans',sans-serif;white-space:nowrap;}
+.btn-kofi:hover{background:#ff4542;transform:translateY(-1px);box-shadow:0 3px 10px rgba(255,94,91,0.3);}
+@media(max-width:500px){.btn-kofi span{display:none;}}
 .btn-lang{background:var(--gold-dim);border-color:var(--gold);color:var(--gold);}
 
 /* TABS */
@@ -225,6 +228,7 @@ body::after{content:'';position:fixed;top:0;left:0;right:0;height:280px;backgrou
   <header>
     <div class="logo"><div class="logo-icon">📖</div>AudioShelf</div>
     <div class="header-right">
+      <a href="https://ko-fi.com/appcommons" target="_blank" rel="noopener" class="btn-kofi" id="btnKofi">☕ <span id="kofiText"></span></a>
       <button class="btn-small btn-lang" onclick="toggleLang()" id="langToggleBtn">EN</button>
       <img class="user-avatar" id="userAvatar" src="" alt="" />
       <span class="user-name" id="userName"></span>
@@ -501,7 +505,7 @@ const db = getFirestore(app);
 const T = {
   zh: {
     loading:'載入中…', tagline:'你的私人雲端聽書空間\n用 Google 帳號登入，書架永遠跟著你',
-    loginBtn:'使用 Google 帳號登入', signOut:'登出', langBtn:'EN',
+    loginBtn:'使用 Google 帳號登入', signOut:'登出', langBtn:'EN', kofi:'贊助',
     tabShelf:'📚 我的書架', tabManage:'✏️ 管理書本',
     shelfTitle:'我的書架', shelfTitleSpan:'書架', books:'本書',
     formNew:'📝 新增書本', formEdit:'✏️ 編輯書本',
@@ -543,7 +547,7 @@ const T = {
   },
   en: {
     loading:'Loading…', tagline:'Your personal cloud audiobook space.\nSign in with Google to keep your shelf everywhere.',
-    loginBtn:'Sign in with Google', signOut:'Sign out', langBtn:'繁中',
+    loginBtn:'Sign in with Google', signOut:'Sign out', langBtn:'繁中', kofi:'Support',
     tabShelf:'📚 My Shelf', tabManage:'✏️ Manage',
     shelfTitle:'My', shelfTitleSpan:'Shelf', books:'books',
     formNew:'📝 Add Book', formEdit:'✏️ Edit Book',
@@ -601,6 +605,7 @@ function applyI18n() {
   // Header
   document.getElementById('langToggleBtn').textContent = t('langBtn');
   document.getElementById('signOutBtn').textContent = t('signOut');
+  document.getElementById('kofiText').textContent = t('kofi');
   // Tabs
   document.getElementById('tabShelfBtn').textContent = t('tabShelf');
   document.getElementById('tabAddBtn').textContent = t('tabManage');
