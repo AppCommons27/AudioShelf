@@ -308,8 +308,9 @@ body::after{content:'';position:fixed;top:0;left:0;right:0;height:280px;backgrou
             <button class="btn btn-gold" onclick="saveApiKey()" id="btnSaveKey" style="flex-shrink:0;"></button>
           </div>
           <div style="margin-top:0.6rem;display:flex;align-items:center;justify-content:space-between;">
-            <p style="font-size:0.72rem;color:var(--text-dim);" id="apiKeyNote"></p>
-            <a href="https://console.anthropic.com" target="_blank" rel="noopener" style="font-size:0.72rem;color:var(--gold);text-decoration:none;" id="apiKeyLink"></a>
+            <div style="font-size:0.72rem;color:var(--text-dim);">
+              <span id="apiKeyNote"></span><a href="https://console.anthropic.com" target="_blank" rel="noopener" style="color:var(--gold);text-decoration:none;" id="apiKeyLink"></a>
+            </div>
             <button onclick="clearApiKey()" id="btnClearKey" style="display:none;background:none;border:none;color:var(--text-dim);font-size:0.72rem;cursor:pointer;text-decoration:underline;font-family:'DM Sans',sans-serif;"></button>
           </div>
         </div>
