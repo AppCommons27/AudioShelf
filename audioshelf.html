@@ -179,6 +179,9 @@ input::placeholder,textarea::placeholder{color:var(--text-dim);}
 .loading-text{font-size:0.82rem;color:var(--text-dim);}
 
 /* GENERATE TAB */
+.provider-tab{flex:1;background:transparent;border:none;border-radius:7px;padding:7px 10px;font-size:0.8rem;font-family:'DM Sans',sans-serif;color:var(--text-dim);cursor:pointer;transition:all 0.15s;font-weight:500;}
+.provider-tab:hover{color:var(--text);}
+.provider-tab.active{background:var(--card);color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,0.3);}
 #genLangZh.active,#genLangEn.active{background:var(--gold-dim);border-color:var(--gold);color:var(--gold);}
 .gen-cursor{display:inline-block;width:2px;height:1em;background:var(--gold);margin-left:2px;animation:blink 1s ease infinite;vertical-align:middle;}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
@@ -296,22 +299,39 @@ body::after{content:'';position:fixed;top:0;left:0;right:0;height:280px;backgrou
     <div class="tab-view" id="tabGen">
       <div style="max-width:680px;margin:0 auto;">
 
-        <!-- API KEY CARD -->
-        <div class="form-card" id="apiKeyCard" style="margin-bottom:1.25rem;border-color:rgba(201,148,58,0.2);">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;flex-wrap:wrap;gap:0.5rem;">
-            <h2 style="font-size:1rem;" id="apiKeyTitle">🔑 Anthropic API Key</h2>
-            <span id="apiKeyStatus" style="font-size:0.72rem;padding:3px 10px;border-radius:999px;"></span>
+        <!-- API KEY CARD - MULTI PROVIDER -->
+        <div class="form-card" style="margin-bottom:1.25rem;border-color:rgba(201,148,58,0.2);">
+          <h2 style="font-size:1rem;margin-bottom:0.9rem;">🔑 AI Provider</h2>
+
+          <!-- Provider tabs -->
+          <div style="display:flex;gap:0.4rem;margin-bottom:1rem;background:var(--bg);border-radius:10px;padding:4px;">
+            <button class="provider-tab active" id="ptab-claude" onclick="setProvider('claude')">
+              🟠 Claude
+            </button>
+            <button class="provider-tab" id="ptab-openai" onclick="setProvider('openai')">
+              🟢 ChatGPT
+            </button>
+            <button class="provider-tab" id="ptab-gemini" onclick="setProvider('gemini')">
+              🔵 Gemini
+            </button>
           </div>
-          <p style="font-size:0.78rem;color:var(--text-dim);margin-bottom:0.9rem;line-height:1.6;" id="apiKeyDesc"></p>
+
+          <!-- Provider info -->
+          <div id="providerInfo" style="font-size:0.78rem;color:var(--text-dim);margin-bottom:0.9rem;line-height:1.6;"></div>
+
+          <!-- Key input -->
           <div style="display:flex;gap:0.6rem;">
-            <input type="password" id="apiKeyInput" placeholder="sk-ant-..." style="flex:1;font-family:monospace;font-size:0.82rem;" />
-            <button class="btn btn-gold" onclick="saveApiKey()" id="btnSaveKey" style="flex-shrink:0;"></button>
+            <input type="password" id="apiKeyInput" style="flex:1;font-family:monospace;font-size:0.82rem;" />
+            <button class="btn btn-gold" onclick="saveApiKey()" id="btnSaveKey" style="flex-shrink:0;">儲存</button>
           </div>
           <div style="margin-top:0.6rem;display:flex;align-items:center;justify-content:space-between;">
             <div style="font-size:0.72rem;color:var(--text-dim);">
-              <span id="apiKeyNote"></span><a href="https://console.anthropic.com" target="_blank" rel="noopener" style="color:var(--gold);text-decoration:none;" id="apiKeyLink"></a>
+              <span id="apiKeyNote"></span><a id="apiKeyLink" target="_blank" rel="noopener" style="color:var(--gold);text-decoration:none;"></a>
             </div>
-            <button onclick="clearApiKey()" id="btnClearKey" style="display:none;background:none;border:none;color:var(--text-dim);font-size:0.72rem;cursor:pointer;text-decoration:underline;font-family:'DM Sans',sans-serif;"></button>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span id="apiKeyStatus" style="font-size:0.72rem;padding:3px 10px;border-radius:999px;"></span>
+              <button onclick="clearApiKey()" id="btnClearKey" style="display:none;background:none;border:none;color:var(--text-dim);font-size:0.72rem;cursor:pointer;text-decoration:underline;font-family:'DM Sans',sans-serif;"></button>
+            </div>
           </div>
         </div>
 
@@ -324,15 +344,12 @@ body::after{content:'';position:fixed;top:0;left:0;right:0;height:280px;backgrou
           </div>
           <div class="form-group">
             <label id="genLabelTime"></label>
-            <div style="display:flex;gap:0.6rem;align-items:center;">
-              <select id="genMinutes" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 13px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:0.88rem;outline:none;flex:1;">
-                <option value="5">5 min</option>
-                <option value="10" selected>10 min</option>
-                <option value="15">15 min</option>
-                <option value="20">20 min</option>
-                <option value="30">30 min</option>
-              </select>
-            </div>
+            <select id="genMinutes" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 13px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:0.88rem;outline:none;width:100%;">
+              <option value="5">5 分鐘</option>
+              <option value="10" selected>10 分鐘</option>
+              <option value="15">15 分鐘</option>
+              <option value="20">20 分鐘</option>
+            </select>
           </div>
           <div class="form-group">
             <label id="genLabelLang"></label>
@@ -1074,29 +1091,83 @@ function loadVoices(){
 window.setVoice=()=>{const i=parseInt(document.getElementById('voiceSelect').value);if(!isNaN(i))selectedVoice=voices[i];};
 window.addEventListener('load',()=>{loadVoices();window.speechSynthesis.onvoiceschanged=loadVoices;});
 
-// ── API KEY ──
-function getApiKey() { return localStorage.getItem('audioshelf_apikey') || ''; }
+// ── MULTI-PROVIDER API KEY ──
+const PROVIDERS = {
+  claude: {
+    name: 'Claude (Anthropic)',
+    placeholder: 'sk-ant-...',
+    keyPrefix: 'sk-ant-',
+    storageKey: 'audioshelf_key_claude',
+    consoleUrl: 'https://console.anthropic.com',
+    consoleName: 'console.anthropic.com',
+    desc: { zh: '使用 Anthropic Claude。高品質中文生成，推薦使用。', en: 'Use Anthropic Claude. Best quality for Chinese content.' },
+  },
+  openai: {
+    name: 'ChatGPT (OpenAI)',
+    placeholder: 'sk-...',
+    keyPrefix: 'sk-',
+    storageKey: 'audioshelf_key_openai',
+    consoleUrl: 'https://platform.openai.com/api-keys',
+    consoleName: 'platform.openai.com',
+    desc: { zh: '使用 OpenAI GPT-4o。廣泛使用，支援多語言。', en: 'Use OpenAI GPT-4o. Widely used, great multilingual support.' },
+  },
+  gemini: {
+    name: 'Gemini (Google)',
+    placeholder: 'AIza...',
+    keyPrefix: 'AIza',
+    storageKey: 'audioshelf_key_gemini',
+    consoleUrl: 'https://aistudio.google.com/app/apikey',
+    consoleName: 'aistudio.google.com',
+    desc: { zh: '使用 Google Gemini。有免費額度，適合入門使用。', en: 'Use Google Gemini. Has free tier, great for getting started.' },
+  }
+};
+
+let currentProvider = localStorage.getItem('audioshelf_provider') || 'claude';
+
+window.setProvider = (p) => {
+  currentProvider = p;
+  localStorage.setItem('audioshelf_provider', p);
+  document.querySelectorAll('.provider-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById(`ptab-${p}`)?.classList.add('active');
+  updateApiKeyUI();
+};
+
+function getApiKey(provider = currentProvider) {
+  return localStorage.getItem(PROVIDERS[provider].storageKey) || '';
+}
 
 window.saveApiKey = () => {
+  const p = PROVIDERS[currentProvider];
   const key = document.getElementById('apiKeyInput').value.trim();
-  if (!key.startsWith('sk-ant-')) { showToast('❌ 格式不對，應以 sk-ant- 開頭', false); return; }
-  localStorage.setItem('audioshelf_apikey', key);
+  if (!key.startsWith(p.keyPrefix)) {
+    showToast(`❌ 格式不對，應以 ${p.keyPrefix} 開頭`, false); return;
+  }
+  localStorage.setItem(p.storageKey, key);
   document.getElementById('apiKeyInput').value = '';
   updateApiKeyUI();
   showToast(t('apiKeySaved'), true);
 };
 
 window.clearApiKey = () => {
-  localStorage.removeItem('audioshelf_apikey');
+  localStorage.removeItem(PROVIDERS[currentProvider].storageKey);
   updateApiKeyUI();
   showToast(t('apiKeyCleared'), false);
 };
 
 function updateApiKeyUI() {
+  const p = PROVIDERS[currentProvider];
   const hasKey = !!getApiKey();
   const status = document.getElementById('apiKeyStatus');
   const clearBtn = document.getElementById('btnClearKey');
   const input = document.getElementById('apiKeyInput');
+  const info = document.getElementById('providerInfo');
+  const noteLink = document.getElementById('apiKeyLink');
+  const note = document.getElementById('apiKeyNote');
+
+  if (info) info.textContent = p.desc[lang] || p.desc.zh;
+  if (input) input.placeholder = hasKey ? '••••••••••••••••' : p.placeholder;
+  if (noteLink) { noteLink.href = p.consoleUrl; noteLink.textContent = p.consoleName; }
+  if (note) note.textContent = lang === 'en' ? 'Get API Key → ' : '取得 API Key → ';
   if (status) {
     status.textContent = hasKey ? t('apiKeySet') : t('apiKeyNotSet');
     status.style.background = hasKey ? 'rgba(74,138,90,0.15)' : 'rgba(255,255,255,0.05)';
@@ -1104,7 +1175,9 @@ function updateApiKeyUI() {
     status.style.border = hasKey ? '1px solid rgba(74,138,90,0.3)' : '1px solid var(--border)';
   }
   if (clearBtn) clearBtn.style.display = hasKey ? 'block' : 'none';
-  if (input) input.placeholder = hasKey ? '••••••••••••••••' : 'sk-ant-...';
+  // Set active provider tab
+  document.querySelectorAll('.provider-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById(`ptab-${currentProvider}`)?.classList.add('active');
 }
 
 // ── GENERATE TAB ──
@@ -1118,7 +1191,10 @@ window.setGenLang = (l) => {
   document.getElementById('genLangEn').classList.toggle('active', l==='en');
 };
 // Default active
-setTimeout(()=>{ document.getElementById('genLangZh').classList.add('active'); }, 100);
+setTimeout(()=>{
+  document.getElementById('genLangZh').classList.add('active');
+  setProvider(currentProvider);
+}, 100);
 
 window.generateSummary = async () => {
   const apiKey = getApiKey();
@@ -1148,8 +1224,8 @@ window.generateSummary = async () => {
     ? '請用繁體中文寫作，適合台灣讀者。'
     : 'Please write in English.';
 
-  const wordCount = 3000;
-  const prompt = `請為《${bookName}》這本書寫一份精華摘要（約 ${wordCount} 字）。${langInstr}
+  const wordCount = minutes * 300; // ~300 chars/min for TTS
+  const prompt = `請為《${bookName}》這本書寫一份 ${minutes} 分鐘的精華摘要（約 ${wordCount} 字）。${langInstr}
 
 要求：
 - 分成清楚的章節，每章節用「第X章 標題」的格式開頭
@@ -1161,21 +1237,48 @@ window.generateSummary = async () => {
 請直接輸出摘要內容。`;
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 6000,
-        stream: true,
-        messages: [{ role: 'user', content: prompt }]
-      })
-    });
+    let response;
+
+    if (currentProvider === 'claude') {
+      response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 6000,
+          stream: true,
+          messages: [{ role: 'user', content: prompt }]
+        })
+      });
+    } else if (currentProvider === 'openai') {
+      response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o',
+          max_tokens: 6000,
+          stream: true,
+          messages: [{ role: 'user', content: prompt }]
+        })
+      });
+    } else if (currentProvider === 'gemini') {
+      response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?alt=sse&key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { maxOutputTokens: 6000 }
+        })
+      });
+    }
 
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
@@ -1193,7 +1296,14 @@ window.generateSummary = async () => {
         if (data === '[DONE]') continue;
         try {
           const json = JSON.parse(data);
-          const delta = json.delta?.text || '';
+          let delta = '';
+          if (currentProvider === 'claude') {
+            delta = json.delta?.text || '';
+          } else if (currentProvider === 'openai') {
+            delta = json.choices?.[0]?.delta?.content || '';
+          } else if (currentProvider === 'gemini') {
+            delta = json.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          }
           if (delta) {
             genResultText += delta;
             box.textContent = genResultText;
@@ -1205,7 +1315,7 @@ window.generateSummary = async () => {
 
     // Done
     document.getElementById('genLoadingBar').style.display = 'none';
-    document.getElementById('genResultMeta').textContent = t('genResultMeta', {min: minutes, chars: genResultText.length.toLocaleString()});
+    document.getElementById('genResultMeta').textContent = `${minutes} 分鐘摘要 · ${genResultText.length.toLocaleString()} ${t('chars')}`;
     document.getElementById('genActionBtns').style.display = 'flex';
     document.getElementById('btnGenerate').disabled = false;
     document.getElementById('btnGenerate').style.opacity = '1';
